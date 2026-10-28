@@ -1,1 +1,86 @@
-this is a.txt
+from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+# 1) اتصال به دیتابیس
+engine = create_engine("sqlite:///school.db", echo=False)
+Base = declarative_base()
+
+
+# 2) تعریف جدول Student
+class Student(Base):
+    __tablename__ = "students"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    score = Column(Float, nullable=False)
+
+
+Base.metadata.create_all(engine)
+
+# 3) ساخت Session
+Session = sessionmaker(bind=engine)
+session = Session()
+
+
+# ---------- Create ----------
+def add_student(name, score):
+    student = Student(name=name, score=score)
+    session.add(student)
+    session.commit()
+    print(f"Added: {student.id} - {student.name} - {student.score}")
+
+
+# ---------- Read ----------
+def get_all_students():
+    students = session.query(Student).all()
+    for s in students:
+        print(f"{s.id} | {s.name} | {s.score}")
+    return students
+
+
+# ---------- Update ----------
+def update_student(student_id, new_name=None, new_score=None):
+    student = session.get(Student, student_id)
+    if student is None:
+        print("Student not found")
+        return
+    if new_name is not None:
+        student.name = new_name
+    if new_score is not None:
+        student.score = new_score
+    session.commit()
+    print(f"Updated: {student.id} - {student.name} - {student.score}")
+
+
+# ---------- Delete ----------
+def delete_student(student_id):
+    student = session.get(Student, student_id)
+    if student is None:
+        print("Student not found")
+        return
+    session.delete(student)
+    session.commit()
+    print(f"Deleted: id={student_id}")
+
+
+# ---------- Test ----------
+if __name__ == "__main__":
+    add_student("Ali", 18.5)
+    add_student("Sara", 19.0)
+    add_student("Reza", 15.75)
+
+    print("\n--- All students ---")
+    get_all_students()
+
+    print("\n--- Update ---")
+    update_student(1, new_score=20.0)
+    update_student(2, new_name="Sara Ahmadi")
+
+    print("\n--- After update ---")
+    get_all_students()
+
+    print("\n--- Delete ---")
+    delete_student(3)
+
+    print("\n--- Final list ---")
+    get_all_students()
